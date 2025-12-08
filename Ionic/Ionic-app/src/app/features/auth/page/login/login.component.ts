@@ -17,8 +17,9 @@ import { eye, eyeOff } from 'ionicons/icons';
 // Servicios propios
 import { AuthService } from 'src/app/core/services/auth/auth.service';
 import { AuthState } from 'src/app/core/services/auth/auth.state';
-import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+import { Router, RouterLink } from '@angular/router';
+import { firstValueFrom, of } from 'rxjs';
+import { PENDING_TWO_FACTOR_EMAIL_KEY } from 'src/app/core/constants/auth.constants';
 
 @Component({
   standalone: true,
@@ -39,11 +40,15 @@ export class LoginComponent {
   private auth = inject(AuthService);
   private authState = inject(AuthState);
   private navCtrl = inject(NavController);
+  private router = inject(Router);
   private loadingCtrl = inject(LoadingController);
   private toastCtrl = inject(ToastController);
+  private readonly pendingTwoFactorEmailKey = PENDING_TWO_FACTOR_EMAIL_KEY;
+  
   loading = false;
   showPassword = false;
   showInlineSpinner = false;
+  
   constructor() {
     // registra iconos usados (evita warnings en algunos entornos)
     addIcons({ eye, eyeOff });
@@ -88,7 +93,7 @@ export class LoginComponent {
     await t.present();
   }
 
-async login() {
+  async login() {
     if (this.loading) {
       console.warn('[LoginComponent] login ignored because loading is true');
       return;
@@ -109,11 +114,20 @@ async login() {
 
     this.loading = true;
     this.showInlineSpinner = true;
+    this.clearPendingTwoFactorEmail();
     console.log('[LoginComponent] inline spinner ON');
 
     try {
-      const user = await firstValueFrom(this.auth.Login(payload));
-      console.log('[LoginComponent] login success', user);
+      const response = await firstValueFrom(this.auth.Login(payload));
+      console.log('[LoginComponent] login response', response);
+
+      if (response?.requiresTwoFactor) {
+        this.cachePendingTwoFactorEmail(payload.email);
+        this.showInlineSpinner = false;
+        await this.toast(response?.message || 'Verificación requerida. Ingresa el código enviado a tu correo.', 'medium');
+        await this.redirectToTwoFactor(payload.email);
+        return;
+      }
 
       const me = await firstValueFrom(this.authState.loadMe());
       console.log('[LoginComponent] loadMe success', me);
@@ -127,13 +141,49 @@ async login() {
       console.error('[LoginComponent] login error', err);
       const msg =
         err?.status === 401
-          ? 'Credenciales inválidas.'
+          ? 'Credenciales inválidas o correo no verificado.'
           : err?.error?.message || 'No se pudo iniciar sesión.';
       await this.toast(msg, 'danger');
     } finally {
       this.loading = false;
       this.showInlineSpinner = false;
       console.log('[LoginComponent] inline spinner OFF (finally)');
+    }
+  }
+
+  private cachePendingTwoFactorEmail(email: string) {
+    try {
+      sessionStorage.setItem(this.pendingTwoFactorEmailKey, email);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private clearPendingTwoFactorEmail() {
+    try {
+      sessionStorage.removeItem(this.pendingTwoFactorEmailKey);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  private async redirectToTwoFactor(email: string) {
+    console.log('[LoginComponent] redirectToTwoFactor start', email);
+    try {
+      this.loading = false;
+      this.showInlineSpinner = false;
+      const ok = await this.router.navigateByUrl('/auth/two-factor', { state: { email } });
+      console.log('[LoginComponent] navigateByUrl /auth/two-factor result', ok);
+      // En móviles el router puede no pintar de inmediato; fuerza carga si seguimos en login
+      setTimeout(() => {
+        if (location.pathname.endsWith('/login')) {
+          console.log('[LoginComponent] hard redirect to /auth/two-factor');
+          window.location.href = '/auth/two-factor';
+        }
+      }, 150);
+    } catch (err) {
+      console.error('[LoginComponent] navigation error to two-factor', err);
+      await this.toast('No se pudo abrir el formulario de código. Intenta nuevamente.', 'danger');
     }
   }
 

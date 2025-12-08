@@ -3,6 +3,17 @@ export interface LoginModel {
     password: string;
 }
 
+export interface TwoFactorVerificationModel {
+  email: string;
+  code: string;
+}
+
+export interface LoginAttemptResponse {
+  isSuccess: boolean;
+  requiresTwoFactor: boolean;
+  message: string;
+}
+
 export interface LoginResponseModel {
     id:    string;
     email: string;

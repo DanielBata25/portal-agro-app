@@ -55,6 +55,19 @@
 
       <!-- Opciones de Cuenta -->
       <h2 class="group-title">Opciones de Cuenta</h2>
+      <div class="row-toggle">
+        <div class="pill-icon"><ion-icon name="shield-checkmark-outline"></ion-icon></div>
+        <div class="info-line">
+          <span class="primary">Verificación en dos pasos</span>
+          <span class="secondary">{{ person.isTwoFactorEnabled ? 'Activada' : 'Desactivada' }}</span>
+        </div>
+        <ion-toggle
+          [checked]="person.isTwoFactorEnabled"
+          [disabled]="isUpdating2FA"
+          (ionChange)="onToggleTwoFactor($event)">
+        </ion-toggle>
+      </div>
+
       <div class="row-btn">
         <div class="pill-icon"><ion-icon name="create-outline"></ion-icon></div>
         <button class="flat-btn" (click)="goto('/account/info/update-person')">

@@ -1,0 +1,48 @@
+<ion-content class="auth-content safe-page full-viewport">
+  <div class="auth-viewport">
+
+    <!-- Logo superior -->
+    <div class="top-logo-wrap">
+      <img src="assets/logo/logo.png" alt="Logo" class="brand-logo" />
+    </div>
+
+    <!-- Card con verde suave -->
+    <ion-card class="formaForm auth-card">
+      <ion-card-content>
+        <h3 class="titleForm ion-text-center">Verificación en dos pasos</h3>
+
+        <p class="ion-text-center mt-8 subtitle-text">
+          Ingresa el código enviado a <strong>{{ email }}</strong> para continuar.
+        </p>
+
+        <form [formGroup]="formCode" (ngSubmit)="confirmCode()" class="mt-12">
+          <!-- Código de verificación -->
+          <label for="code" class="label">Código de verificación</label>
+          <ion-item lines="none" class="input-custom">
+            <ion-input
+              id="code"
+              type="text"
+              inputmode="numeric"
+              maxlength="6"
+              autocomplete="one-time-code"
+              formControlName="code"
+              placeholder="Ej: 123456"
+            ></ion-input>
+          </ion-item>
+          <ion-note color="danger" *ngIf="formCode.get('code')?.invalid && formCode.get('code')?.touched" class="note">
+            {{ getErrorMessage('code') }}
+          </ion-note>
+
+          <button type="submit" class="auth-btn mt-12 inline-login-btn" [disabled]="formCode.invalid || loading">
+            <ion-spinner *ngIf="showInlineSpinner" name="crescent" class="inline-spinner"></ion-spinner>
+            <span *ngIf="!showInlineSpinner">Verificar código</span>
+          </button>
+
+          <button type="button" class="auth-btn-outline mt-8" [routerLink]="['/auth/login']">
+            Volver al inicio de sesión
+          </button>
+        </form>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

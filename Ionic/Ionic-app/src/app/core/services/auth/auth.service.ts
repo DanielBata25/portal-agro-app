@@ -2,7 +2,7 @@
 import { Injectable } from '@angular/core';
 import { from, map, switchMap } from 'rxjs';
 import { ConfirmEmailVerificationModel, RegisterUserModel, RequestEmailVerificationModel } from '../../models/register.user.model';
-import { LoginModel, UserMeDto } from '../../models/login.model';
+import { LoginAttemptResponse, LoginModel, TwoFactorVerificationModel, UserMeDto } from '../../models/login.model';
 import { PersonUpdateModel, UserSelectModel } from '../../models/user.model';
 import {
   ChangePasswordModel,
@@ -35,7 +35,11 @@ export class AuthService {
   }
 
   Login(obj: LoginModel) {
-    return from(ApiNative.post<void>(`${this.base}login`, obj)).pipe(map(() => void 0));
+    return from(ApiNative.post<LoginAttemptResponse>(`${this.base}login`, obj));
+  }
+
+  ConfirmTwoFactorLogin(obj: TwoFactorVerificationModel) {
+    return from(ApiNative.post<void>(`${this.base}login/two-factor`, obj));
   }
 
   ChangePassword(obj: ChangePasswordModel) {
@@ -43,6 +47,10 @@ export class AuthService {
   }
 
   GetMe() {
+    return from(ApiNative.get<UserMeDto>(`${this.base}me`));
+  }
+
+  GetMeOptional() {
     return from(ApiNative.get<UserMeDto>(`${this.base}me`));
   }
 
@@ -73,6 +81,10 @@ export class AuthService {
     return from(ApiNative.put<void>(`${this.base}updatePerson`, obj));
   }
 
+  UpdateTwoFactorPreference(enable: boolean) {
+    return from(ApiNative.put<void>(`${this.base}two-factor`, { enable }));
+  }
+
   RequestRecoverPassword(obj: RecoverPasswordModel) {
     return from(ApiNative.post<void>(`${this.base}recover/send-code`, obj));
   }
@@ -80,4 +92,5 @@ export class AuthService {
   ConfirmRecoverPassword(obj: RecoverPasswordConfirmModel) {
     return from(ApiNative.post<void>(`${this.base}recover/confirm`, obj));
   }
+  
 }
