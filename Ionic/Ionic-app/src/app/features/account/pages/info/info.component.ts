@@ -1,20 +1,23 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
-  IonContent, IonIcon,
+  IonContent, IonIcon, IonToggle,
   IonCard, IonCardContent, IonSpinner,
   ToastController
 } from '@ionic/angular/standalone';
+import { ToggleCustomEvent } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
   mail, call, idCard, location,
   bagHandleOutline, createOutline, lockClosedOutline,
   logOutOutline, nutritionOutline, readerOutline,
-  helpCircleOutline, mailOutline, chevronForward
+  helpCircleOutline, mailOutline, chevronForward,
+  shieldCheckmarkOutline
 } from 'ionicons/icons';
 
 import { Router, RouterModule } from '@angular/router';
 import { Location } from '@angular/common';
+import { finalize } from 'rxjs/operators';
 
 import { AuthService } from 'src/app/core/services/auth/auth.service';
 import { AuthState } from 'src/app/core/services/auth/auth.state';
@@ -26,7 +29,7 @@ import { AlertController } from '@ionic/angular';
   standalone: true,
   imports: [
     CommonModule, RouterModule,
-    IonContent, IonIcon,
+    IonContent, IonIcon, IonToggle,
     IonCard, IonCardContent, IonSpinner,
   ],
   templateUrl: './info.component.html',
@@ -43,6 +46,7 @@ export class InfoComponent implements OnInit {
   person?: UserSelectModel;
   loading = true;
   loggingOut = false;
+  isUpdating2FA = false;
 
   get isProducer(): boolean {
     return this.authState.hasRole('producer') || this.authState.hasRole('admin');
@@ -68,6 +72,7 @@ export class InfoComponent implements OnInit {
       'help-circle-outline': helpCircleOutline,
       'mail-outline': mailOutline,
       'chevron-forward': chevronForward,
+      'shield-checkmark-outline': shieldCheckmarkOutline,
     });
   }
 
@@ -148,5 +153,33 @@ export class InfoComponent implements OnInit {
       },
       complete: () => { this.loggingOut = false; }
     });
+  }
+
+  onToggleTwoFactor(event: ToggleCustomEvent): void {
+    if (!this.person) return;
+
+    const enabled = !!event.detail.checked;
+    const previous = !!this.person.isTwoFactorEnabled;
+    this.isUpdating2FA = true;
+
+    this.authService.UpdateTwoFactorPreference(enabled).pipe(
+      finalize(() => { this.isUpdating2FA = false; })
+    ).subscribe({
+      next: async () => {
+        this.person!.isTwoFactorEnabled = enabled;
+        await this.toast(enabled ? 'Verificación en dos pasos activada.' : 'Verificación en dos pasos desactivada.', 'success');
+      },
+      error: async (err) => {
+        this.person!.isTwoFactorEnabled = previous;
+        event.target.checked = previous;
+        const msg = err?.error?.message || err?.message || 'No se pudo actualizar la verificación en dos pasos.';
+        await this.toast(msg, 'danger');
+      },
+    });
+  }
+
+  private async toast(message: string, color: 'success' | 'danger' | 'medium' = 'medium') {
+    const t = await this.toastCtrl.create({ message, duration: 1800, color, position: 'bottom' });
+    await t.present();
   }
 }

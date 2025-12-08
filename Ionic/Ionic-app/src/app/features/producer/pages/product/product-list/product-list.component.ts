@@ -128,7 +128,6 @@ export class ProductListComponent implements OnInit {
   loadChildren(parentId: number): void {
     this.isLoadingCategories = true;
     this.updateCategoryControlState();
-    this.categoryCtrl.setValue(null, { emitEvent: false });
 
     this.categoryService.getNodes(parentId).subscribe({
       next: (nodes) => {
@@ -144,6 +143,7 @@ export class ProductListComponent implements OnInit {
 
   onSelectCategory(categoryId: number): void {
     if (categoryId == null) return;
+    this.categoryCtrl.setValue(categoryId, { emitEvent: false });
     const node = this.categories.find(c => c.id === categoryId);
     if (!node) return;
 
@@ -252,15 +252,11 @@ trackByBreadcrumb = (_: number, b: { id: number; name: string }) => b.id;
     this.categories = nodes ?? [];
     this.atLeaf = this.categories.length === 0 || !this.categories.some(n => n.hasChildren);
 
-    if (resetSelection || this.atLeaf) {
-      this.categoryCtrl.setValue(null, { emitEvent: false });
-    }
-
     this.updateCategoryControlState();
   }
 
   private updateCategoryControlState(): void {
-    if (this.isLoadingCategories || this.atLeaf) {
+    if (this.isLoadingCategories) {
       this.categoryCtrl.disable({ emitEvent: false });
     } else {
       this.categoryCtrl.enable({ emitEvent: false });

@@ -29,9 +29,9 @@
             class="category-select"
             interface="popover"
             placeholder="Selecciona"
-            [disabled]="isLoadingCategories || atLeaf"
+            [disabled]="isLoadingCategories"
             [formControl]="categoryCtrl"
-            (ionChange)="onSelectCategory($event.detail.value)">
+          (ionChange)="onSelectCategory($event.detail.value)">
             <ion-select-option
               *ngFor="let c of categories; trackBy: trackByCategory"
               [value]="c.id">
@@ -40,6 +40,7 @@
             </ion-select-option>
           </ion-select>
         </ion-item>
+
       </div>
 
       <div class="breadcrumb-track">

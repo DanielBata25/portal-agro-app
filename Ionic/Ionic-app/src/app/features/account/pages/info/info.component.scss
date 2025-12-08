@@ -130,3 +130,17 @@
     font-size: 18px;
   }
 }
+
+.row-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0;
+  padding: 6px 0;
+}
+
+.row-toggle ion-toggle {
+  --handle-background-checked: #2d6a4f;
+  --background-checked: #c8e6d3;
+}

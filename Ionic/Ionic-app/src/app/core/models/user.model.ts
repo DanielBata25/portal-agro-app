@@ -1,4 +1,5 @@
 export interface UserSelectModel{
+    isTwoFactorEnabled: boolean;
     firstName:       string;
     lastName:       string;
     identification: string;

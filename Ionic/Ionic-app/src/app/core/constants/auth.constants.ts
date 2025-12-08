@@ -1,0 +1,1 @@
+export const PENDING_TWO_FACTOR_EMAIL_KEY = 'pendingTwoFactorEmail';
