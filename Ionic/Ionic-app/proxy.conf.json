@@ -1,7 +1,7 @@
 [
   {
     "context": ["/api"],
-    "target": "apiUrl:'https://portal-agro-huila-ggg3bzabdma2byes.eastus2-01.azurewebsites.net/api/v1',",
+    "target": "https://portal-agro-huila-ggg3bzabdma2byes.eastus2-01.azurewebsites.net",
     "secure": true,
     "changeOrigin": true,
     "logLevel": "info"

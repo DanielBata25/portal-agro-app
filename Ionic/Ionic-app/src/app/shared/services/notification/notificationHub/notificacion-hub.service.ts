@@ -4,6 +4,7 @@ import {
     HubConnectionBuilder,
     HubConnectionState,
     LogLevel,
+    HttpTransportType,
 } from '@microsoft/signalr';
 import { BehaviorSubject, Subject, Observable } from 'rxjs';
 import { Capacitor } from '@capacitor/core';
@@ -54,10 +55,17 @@ export class NotificationHubService {
             await this.hub.start();
             this.zone.run(() => this.status$.next('connected'));
             console.log('[NOTIFICATION-HUB] Conexión SignalR establecida');
-        } catch (error) {
-            console.error('Error al conectar con el hub de notificaciones', error);
+        } catch (error: any) {
+            const msg = (error?.message ?? '').toString();
+            const is404 = msg.includes('404') || msg.includes('Status code \'404\'');
+            // Evita spam de errores cuando el endpoint/hub no está disponible
+            if (is404) {
+                console.warn('[NOTIFICATION-HUB] Hub no disponible (404). Continuando sin tiempo real.');
+            } else {
+                console.error('Error al conectar con el hub de notificaciones', error);
+            }
             this.zone.run(() => this.status$.next('disconnected'));
-            throw error;
+            return;
         }
     }
 
@@ -80,9 +88,10 @@ export class NotificationHubService {
         const connection = new HubConnectionBuilder()
             .withUrl(hubUrl, {
                 withCredentials: true,
+                transport: HttpTransportType.WebSockets, // fuerza WebSockets, evita SSE/longPolling
             })
             .withAutomaticReconnect()
-            .configureLogging(LogLevel.Information)
+            .configureLogging(LogLevel.Error) // reduce ruido en consola
             .build();
 
         connection.on('NewNotification', (notification: NotificationListItemDto) => {
@@ -108,14 +117,17 @@ export class NotificationHubService {
     private buildHubUrl(): string {
         const isNative = Capacitor.isNativePlatform();
 
-        // 1) Si es nativo → **SIEMPRE** usar URL absoluta real
-        if (isNative) {
-            return `${environment.apiUrl.replace(/\/+$/, '')}/hubs/notifications`;
+        const explicit = (environment as any).hubUrl as string | undefined;
+        if (explicit) {
+            return explicit.replace(/\/+$/, '') + '/hubs/notifications';
         }
 
-        // 2) Si es navegador → usar proxy si existe
-        const base = environment.apiUrlBrowser || environment.apiUrl;
+        const base = isNative
+            ? environment.apiUrl
+            : (environment.apiUrlBrowser || environment.apiUrl);
 
-        return `${base.replace(/\/+$/, '')}/hubs/notifications`;
+        // Reemplaza sufijo /api/v1 o /api/v1/ por /hubs/notifications
+        const withoutApi = base.replace(/\/api\/v1\/?$/, '');
+        return `${withoutApi.replace(/\/+$/, '')}/hubs/notifications`;
     }
 }

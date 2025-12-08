@@ -284,9 +284,11 @@ export class ProductDetailComponent implements OnInit, AfterViewInit {
     });
     await modal.present();
 
-    const { data } = await modal.onWillDismiss<{ IsSuccess: boolean; OrderId: number }>();
-    if (data?.IsSuccess) {
-      this.showToast(`Pedido #${data.OrderId} creado`, 'success', 'bottom');
+    const { data } = await modal.onWillDismiss<{ created?: boolean; order?: any }>();
+    if (data?.created) {
+      const orderId = data.order?.id || data.order?.orderId;
+      const msg = data.order?.message || (orderId ? `Pedido #${orderId} creado` : 'Pedido creado correctamente.');
+      this.showToast(msg, 'success', 'bottom');
     }
   }
 
